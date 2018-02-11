@@ -67,18 +67,18 @@ public class JackAnalyzer {
             writeLine(out,  "<tokens>");
             Tokenizer tokenizer = new Tokenizer(file);
 
+            /*
             String line = "    no quotes at all except \"this one at the end\"    ";
             for (String word:tokenizer.getWordsInQuotedLine(line)) {
                 System.out.println(word);
             }
+            */
 
             while (tokenizer.hasMoreTokens()) {
                 String value = null;
                 tokenizer.advance();
                 TokenType type = tokenizer.tokenType();
-                if (type == TokenType.KEYWORD) {
-                    value = tokenizer.getKeyword();
-                }
+                value = tokenizer.getCurrentToken();
                 writeLine(out, type.doTag(value));
             }
             writeLine(out,  "</tokens>");
