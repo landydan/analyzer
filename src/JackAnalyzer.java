@@ -15,8 +15,8 @@ import java.util.List;
 public class JackAnalyzer {
 
     private final static String SUFFIX = ".xml";
-    private final static String UTF8 = "UTF-8";
-    private final static String LINE_END = "\n";
+    public final static String UTF8 = "UTF-8";
+    public final static String LINE_END = "\n";
     public final static String COMMENT = "//";
 
     private final static int INITIAL_STACK_POINTER = 256;
@@ -64,15 +64,13 @@ public class JackAnalyzer {
         OutputStream out = null;
         try {
             out = new FileOutputStream(outPath);
-            writeLine(out,  "<tokens>");
-            Tokenizer tokenizer = new Tokenizer(file);
 
+
+
+            Tokenizer tokenizer = new Tokenizer(file);
             /*
-            String line = "    no quotes at all except \"this one at the end\"    ";
-            for (String word:tokenizer.getWordsInQuotedLine(line)) {
-                System.out.println(word);
-            }
-            */
+            // writeLine(out,  "<tokens>");
+
 
             while (tokenizer.hasMoreTokens()) {
                 String value = null;
@@ -82,6 +80,11 @@ public class JackAnalyzer {
                 writeLine(out, type.doTag(value));
             }
             writeLine(out,  "</tokens>");
+            */
+
+            CompilationEngine engine = new CompilationEngine(tokenizer, out);
+            engine.compileClass();
+
         } catch (Exception e) {
             e.printStackTrace();
             throw new RuntimeException("oops");
