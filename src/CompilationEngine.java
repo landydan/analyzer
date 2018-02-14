@@ -3,9 +3,7 @@ import org.apache.commons.io.IOUtils;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.reflect.Type;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 public class CompilationEngine {
 
@@ -13,6 +11,8 @@ public class CompilationEngine {
     private OutputStream output;
 
     private Tokenizer tokenizer;
+
+    private final static Set<String> typeKeywords = new HashSet<String>(Arrays.asList("int", "char", "boolean"));
 
     public CompilationEngine(InputStream input, OutputStream output) {
         this.input = input;
@@ -70,14 +70,18 @@ public class CompilationEngine {
 
         tokenizer.advance();
         String token = tokenizer.getCurrentToken();
-
         while (isClassVar(token)) {
             compileClassVariableDeclaration(token);
             tokenizer.advance();
             token = tokenizer.getCurrentToken();
         }
 
-        compileSubroutineDeclaration();
+        while (isSubroutine(token)) {
+            compileSubroutineDeclaration(token);
+            tokenizer.advance();
+            token = tokenizer.getCurrentToken();
+        }
+
         checkAndWriteExpected(TokenType.SYMBOL,  "}");
         endTag("class");
     }
@@ -86,15 +90,62 @@ public class CompilationEngine {
         return (token.equals("static") || token.equals("field"));
     }
 
+    private boolean isSubroutine(String token) {
+        return (token.equals("constructor") || token.equals("function") || token.equals("method"));
+    }
+
     public void compileClassVariableDeclaration(String keyword) {
         beginTag("classVarDec");
         writeLine(TokenType.KEYWORD.doTag(keyword));
 
+        tokenizer.advance();
+        String token = tokenizer.getCurrentToken();
+        // type is int, char, boolean or className (identifier)
+        if (typeKeywords.contains(token)) {
+            writeLine(TokenType.KEYWORD.doTag(token));
+        } else {
+            writeLine(TokenType.IDENTIFIER.doTag(token));
+        }
+
+        while (!(token.equals(";"))) {
+            tokenizer.advance();
+            token = tokenizer.getCurrentToken();
+            if (token.equals(",") || token.equals(";")) {
+                writeLine(TokenType.SYMBOL.doTag(token));
+            } else {
+                writeLine(TokenType.IDENTIFIER.doTag(token));
+            }
+        }
         endTag("classVarDec");
     }
 
-    public void compileSubroutineDeclaration() {
-        writeLine("SUBROUTINE DEC HERE");
+    public void compileSubroutineDeclaration(String keyword) {
+        beginTag("subroutineDec");
+        writeLine(TokenType.KEYWORD.doTag(keyword));
+
+        tokenizer.advance();
+        String token = tokenizer.getCurrentToken();
+        if (token.equals("void")) {
+            writeLine(TokenType.KEYWORD.doTag(token));
+        } else if(typeKeywords.contains(token)) {
+            writeLine(TokenType.KEYWORD.doTag(token));
+        } else {
+            writeLine(TokenType.IDENTIFIER.doTag(token));
+        }
+        checkAndWriteExpected(TokenType.IDENTIFIER, null);
+        checkAndWriteExpected(TokenType.SYMBOL, "(");
+        while (!(token.equals(")"))) {
+            tokenizer.advance();
+            token = tokenizer.getCurrentToken();
+            if (token.equals(",") || token.equals(")")) {
+                writeLine(TokenType.SYMBOL.doTag(token));
+            } else if(typeKeywords.contains(token)) {
+                writeLine(TokenType.KEYWORD.doTag(token));
+            } else {
+                writeLine(TokenType.IDENTIFIER.doTag(token));
+            }
+        }
+        endTag("subroutineDec");
     }
 
     public void compileParameterList() {
