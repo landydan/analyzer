@@ -380,11 +380,12 @@ public class CompilationEngine {
         compileTerm();
         tokenizer.advance();
         String token = tokenizer.getCurrentToken();
-        if (isOperation(token)) {
+        while (isOperation(token)) {
             writeExpected(TokenType.SYMBOL, token);
             tokenizer.advance();
             compileTerm();
             tokenizer.advance();
+            token = tokenizer.getCurrentToken();
         }
         endTag("expression");
     }
