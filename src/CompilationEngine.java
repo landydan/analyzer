@@ -19,6 +19,10 @@ public class CompilationEngine {
 
     private final static Set<String> unaryOps = new HashSet<String>(Arrays.asList("~", "-"));
 
+    private final static Set<TokenType> simpleTerms = new HashSet<TokenType>(Arrays.asList(TokenType.STRING_CONSTANT, TokenType.INTEGER_CONSTANT));
+
+    private final static Set<String> keywordConstants = new HashSet<String>(Arrays.asList("true", "false", "null", "this"));
+
 
     public CompilationEngine(InputStream input, OutputStream output) {
         this.input = input;
@@ -106,6 +110,19 @@ public class CompilationEngine {
 
     private boolean isSubroutine(String token) {
         return (token.equals("constructor") || token.equals("function") || token.equals("method"));
+    }
+
+    private boolean isKeywordConstant(String token) {
+        return keywordConstants.contains(token);
+    }
+
+
+    private boolean isSimpleTerm(TokenType type) {
+        return simpleTerms.contains(type);
+    }
+
+    private boolean isUnaryOp(String token) {
+        return unaryOps.contains(token);
     }
 
     private boolean isOperation(String token) {
@@ -378,25 +395,67 @@ public class CompilationEngine {
     public void compileExpression() {
         beginTag("expression");
         compileTerm();
-        tokenizer.advance();
         String token = tokenizer.getCurrentToken();
         while (isOperation(token)) {
             writeExpected(TokenType.SYMBOL, token);
             tokenizer.advance();
             compileTerm();
-            tokenizer.advance();
             token = tokenizer.getCurrentToken();
         }
         endTag("expression");
     }
 
     // assume we've already advanced
+    // return true if the caller needs to advance
     public void compileTerm() {
+        boolean needAdvance = true;
         beginTag("term");
         String token = tokenizer.getCurrentToken();
         TokenType type = tokenizer.tokenType();
-        writeLine(type.doTag(token));
+        if (isSimpleTerm(type)) {
+            writeLine(type.doTag(token));
+        } else if (isKeywordConstant(token)) {
+            writeLine(TokenType.KEYWORD.doTag(token));
+        } else if (isUnaryOp(token)) {
+            writeLine(TokenType.SYMBOL.doTag(token));
+            tokenizer.advance();
+            compileTerm();
+        } else if (token.equals("(")) {
+            writeLine(TokenType.SYMBOL.doTag("("));
+            tokenizer.advance();
+            compileExpression();
+            writeExpected(TokenType.SYMBOL, ")");
+        } else {
+            // here we need a second token to figure out what we have
+            // but in all cases we'll be writing an identifier first
+            writeExpected(TokenType.IDENTIFIER, token);
+            tokenizer.advance();
+            String nextToken = tokenizer.getCurrentToken();
+            if (nextToken.equals("[")) {
+                writeLine(TokenType.IDENTIFIER.doTag("["));
+                tokenizer.advance();
+                compileExpression();
+                writeExpected(TokenType.SYMBOL, "]");
+            } else if (nextToken.equals("(")) {
+                writeLine(TokenType.SYMBOL.doTag("("));
+                compileExpressionList();
+                writeExpected(TokenType.SYMBOL, ")");
+            } else if (nextToken.equals(".")) {
+                writeLine(TokenType.SYMBOL.doTag("."));
+                advanceAndWriteExpected(TokenType.IDENTIFIER, null);
+                advanceAndWriteExpected(TokenType.SYMBOL, "(");
+                compileExpressionList();
+                writeExpected(TokenType.SYMBOL, ")");
+            } else {
+                // it was just an identifier, so do nothing
+                needAdvance = false;
+            }
+        }
+        if (needAdvance) {
+            tokenizer.advance();
+        }
         endTag("term");
+
     }
 
 
