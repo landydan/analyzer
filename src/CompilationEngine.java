@@ -15,7 +15,7 @@ public class CompilationEngine {
 
     private final static Set<String> statementKeywords = new HashSet<String>(Arrays.asList("if", "let", "while", "do", "return"));
 
-    private final static Set<String> operations = new HashSet<String>(Arrays.asList("+", "-", "*", "/", "&", "|", "<", ">", "=" ));
+    private final static Set<String> operations = new HashSet<String>(Arrays.asList("+", "-", "*", "/", "&amp;", "|", "&lt;", "&gt;", "=" ));
 
     private final static Set<String> unaryOps = new HashSet<String>(Arrays.asList("~", "-"));
 
@@ -406,7 +406,6 @@ public class CompilationEngine {
     }
 
     // assume we've already advanced
-    // return true if the caller needs to advance
     public void compileTerm() {
         boolean needAdvance = true;
         beginTag("term");
@@ -420,6 +419,7 @@ public class CompilationEngine {
             writeLine(TokenType.SYMBOL.doTag(token));
             tokenizer.advance();
             compileTerm();
+            needAdvance = false;
         } else if (token.equals("(")) {
             writeLine(TokenType.SYMBOL.doTag("("));
             tokenizer.advance();
@@ -432,7 +432,7 @@ public class CompilationEngine {
             tokenizer.advance();
             String nextToken = tokenizer.getCurrentToken();
             if (nextToken.equals("[")) {
-                writeLine(TokenType.IDENTIFIER.doTag("["));
+                writeLine(TokenType.SYMBOL.doTag("["));
                 tokenizer.advance();
                 compileExpression();
                 writeExpected(TokenType.SYMBOL, "]");
