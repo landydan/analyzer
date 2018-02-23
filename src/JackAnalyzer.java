@@ -29,12 +29,11 @@ public class JackAnalyzer {
     private void translate(String inName) {
         String baseName = FilenameUtils.getBaseName(inName);
         String inDir = null;
+        String outDir = null;
         System.out.println("BASE:" + baseName);
 
         File arg = new File(inName);
         boolean isDirectory = arg.isDirectory();
-
-        String outDir = "/Users/dan/temp/output";
 
         Collection<File> allFiles;
         if (isDirectory) {
@@ -44,6 +43,7 @@ public class JackAnalyzer {
             inDir = FilenameUtils.getFullPath(inName);
             allFiles = Collections.singletonList(arg);
         }
+        outDir = inDir;
         FileOutputStream outputStream = null;
         try {
             for (File file:allFiles) {
